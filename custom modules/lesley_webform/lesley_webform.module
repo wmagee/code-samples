@@ -1,0 +1,729 @@
+<?php
+
+/**
+ * @file
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\sw_webform\Support\SupportEntity;
+use Drupal\Core\Routing\TrustedRedirectResponse;
+use Drupal\sw_webform\Support\SupportWebformsHelper;
+use Drupal\sw_webform\DowJonesFreeTrial\DowJonesWebformHelper;
+use Drupal\webform\WebformSubmission;
+use Drupal\webform\WebformSubmissionInterface;
+
+/**
+ * Implements hook_webform_submission_presave().
+ *
+ * Set webform value field to URL of appropriate How to Apply page,
+ * based on user selections in the Webform.
+ */
+function lesley_webform_webform_submission_presave(WebformSubmissionInterface $webform_submission) {
+
+  $arr = [];
+
+  // Get the webform ID.
+  $webform = $webform_submission->getWebform();
+  $webform_id = $webform->id();
+
+  switch($webform_id) {
+    // Undergrad How to Apply webform
+    case 'undergrad_how_to_apply':
+      // Get the redirect url and message.
+      $arr = _get_undergrad_redirect($webform_submission);
+
+      break;
+    // Undergrad How to Apply form
+    case 'graduate_how_to_apply':
+      // Get the redirect url and message.
+      $arr = _get_graduate_redirect($webform_submission);
+
+      break;
+  }
+
+  if (empty($arr['url'])) {
+    // display error if url is not set
+    //\Drupal::messenger()->addError('Page not found, please click on Reset and try again. ' . $webform_id);
+
+  } else {
+    // Set the redirect url in webform value field.
+    $webform_submission->setElementData('lesley_confirmation_url', $arr['url']);
+
+  }
+}
+
+
+/**
+ * Get the URL for Undergrad How to Apply page URL based on selections made in the webform.
+ */
+function _get_undergrad_redirect(WebformSubmissionInterface $webform_submission)
+{
+  // Get the slection values from the webform.
+  $dialog = _get_undergrad_values($webform_submission);
+  $url = '';
+  $msg = '';
+
+  // Bachelor's degree
+  if ($dialog[1] == 'Bachelors degree') {
+
+    // First Year student.
+    if ($dialog[2] == 'First-year student') {
+      if ($dialog[3] == 'Art Design') {
+        if ($dialog[8] == 'No') {
+          $msg = "Here are your application requirements! <br /> First-Year Art & Design Major (US Student)";
+          $url = "/academics/undergraduate-first-year-bfa-programs-how-to-apply-guide-us-students";
+        } else {
+          $msg = "Here are your application requirements! <br /> First-Year Art & Design Major (International Student):";
+          $url = "/academics/undergraduate-first-year-bfa-programs-how-to-apply-guide-international";
+        }
+      } elseif ($dialog[3] == 'Liberal Arts') {
+        if ($dialog[8] == 'No') {
+          $msg = "Here are your application requirements! <br />  First-Year Liberal Arts Major (US Student):";
+          $url = "/academics/undergraduate-first-year-liberal-arts-and-non-bfa-how-to-apply-guide-us-students";
+        } else {
+          $msg = "Here are your application requirements! <br /> First-Year Liberal Arts Major (International Student):";
+          $url = "/academics/undergraduate-first-year-liberal-arts-and-non-bfa-how-to-apply-guide-international";
+        }
+      }
+    }
+    // Transfer student
+    elseif ($dialog[2] == 'Transfer student') {
+      if ($dialog[3] == 'Liberal Arts') {
+        if ($dialog[6] == 'Online bachelor') {
+          if ($dialog[8] == 'No') {
+            $msg = "Here are your application requirements! <br />  Online Bachelor’s Degree Guide, US Students:";
+            $url = "/academics/online-bachelors-degree-programs-how-to-apply-guide-us-students";
+          } else {
+            $msg = "Here are your application requirements! <br />  Online Bachelor’s Degree Guide, International Students";
+            $url = "/academics/online-bachelors-degree-programs-how-to-apply-guide-international";
+          }
+        } elseif ($dialog[6] == 'face-to-face') {
+          if ($dialog[8] == 'No') {
+            $msg = "Here are your application requirements! <br />  Art & Design Transfer Guide, US Students";
+            $url = "/academics/undergraduate-transfer-liberal-arts-and-non-bfa-how-to-apply-guide-us-students";
+          } else {
+            $msg = "Here are your application requirements! <br />  Art & Design Transfer Guide, International Students";
+            $url = "/academics/undergraduate-transfer-liberal-arts-and-non-bfa-how-to-apply-guide-international";
+          }
+        }
+      }
+      if ($dialog[3] == 'Art Design') {
+        if ($dialog[5] == 'Online BS UX') {
+          if ($dialog[8] == 'No') {
+            $msg = "Here are your application requirements! <br />  Online Bachelor’s Degree Guide, US Students:";
+            $url = "/academics/online-bachelors-degree-programs-how-to-apply-guide-us-students";
+          } else {
+            $msg = "Here are your application requirements! <br />  Online Bachelor’s Degree Guide, International Students";
+            $url = "/academics/online-bachelors-degree-programs-how-to-apply-guide-international";
+          }
+        } elseif ($dialog[5] == 'face-to-face') {
+          if ($dialog[8] == 'No') {
+            $msg = "Here are your application requirements! <br />  Art & Design Transfer Guide, US Students";
+            $url = "/academics/undergraduate-transfer-bfa-programs-how-to-apply-guide-us-students";
+          } else {
+            $msg = "Here are your application requirements! <br />  Art & Design Transfer Guide, International Students";
+            $url = "/academics/undergraduate-transfer-bfa-programs-how-to-apply-guide-international";
+          }
+        }
+      }
+    }
+    // Adult Learner
+    elseif ($dialog[2] == 'Adult learner') {
+      if ($dialog[4] == 'face-to-face program') {
+        if ($dialog[8] == 'No') {
+          $msg = "Here are your application requirements! <br /> Degree Completion, On-Campus (US Students):";
+          $url = "/academics/bachelors-degree-completion-on-campus-program-how-to-apply-guide-us-students";
+        } else {
+          $msg = "Here are your application requirements! <br /> Degree Completion, On-Campus (International Students):";
+          $url = "/academics/bachelors-degree-completion-on-campus-program-how-to-apply-guide-international";
+        }
+      }
+      if ($dialog[4] == 'off-campus program') {
+        if ($dialog[8] == 'No') {
+          $msg = "Here are your application requirements! <br /> Degree Completion, Off-Campus Community Partners (US Students):";
+          $url = "/academics/bachelors-degree-completion-off-campus-community-college-partnership-how-to-apply-guide";
+        } else {
+          $msg = "Here are your application requirements! <br /> Degree Completion, Off-Campus Community Partners (International):";
+          $url = "/academics/bachelors-degree-completion-off-campus-community-college-partnership-how-to-apply-guide-international";
+        }
+      }
+      if ($dialog[4] == 'online program') {
+        if ($dialog[8] == 'No') {
+          $msg = "Here are your application requirements! <br />  Online Bachelor’s Degree Guide, US Students:";
+          $url = "/academics/online-bachelors-degree-programs-how-to-apply-guide-us-students";
+        } else {
+          $msg = "Here are your application requirements! <br /> Online Bachelor’s Degree Guide, Int’l Students:";
+          $url = "/academics/online-bachelors-degree-programs-how-to-apply-guide-international";
+        }
+      }
+    }
+  }
+
+  // Post-baccalaureate
+  if ($dialog[1] == 'Post-baccalaureate') {
+    // Transfer student  off-campus program  online program
+    if ($dialog[7] == 'Online program') {
+      if ($dialog[8] == 'No') {
+        $msg = "Here are your application requirements! <br />  Undergraduate On-Campus/F2F Advanced Professional Cert. US Students";
+        $url = "/academics/online-post-baccalaureate-certificate-programs-how-to-apply-guide-us-students";
+      } else {
+        $msg = "Here are your application requirements! <br />  Undergraduate On-Campus/F2F Advanced Professional Cert. Int’l Students";
+        $url = "/academics/online-post-baccalaureate-certificate-programs-how-to-apply-guide-international";
+      }
+    }
+    if ($dialog[7] == 'face-to-face program') {
+      if ($dialog[8] == 'No') {
+        $msg = "Here are your application requirements! <br />  Undergraduate On-Campus/F2F Advanced Professional Cert. US Students";
+        $url = "/academics/undergraduate-art-and-design-advanced-professional-certificate-how-to-apply-guide-us";
+      } else {
+        $msg = "Here are your application requirements! <br />  Undergraduate On-Campus/F2F Advanced Professional Cert. Int’l Students";
+        $url = "/academics/undergraduate-art-and-design-advanced-professional-certificate-how-to-apply-guide-international";
+      }
+    }
+  }
+
+  $values = [];
+  $values['msg'] = $msg;
+  $values['url'] = $url;
+
+  return $values;
+}
+
+/**
+ * Get the URL for Graduate - How to Apply page URL based on selections made in the webform.
+ */
+function _get_graduate_redirect(WebformSubmissionInterface $webform_submission)
+{
+  // Get the slection values from the webform.
+  $dialog = _get_graduate_values($webform_submission);
+  $url = '';
+  $msg = '';
+
+  // Counseling and Psychology.
+  if ($dialog[1] == 'counseling_psychology') {
+    if ($dialog[2] == 'masters_degree') {
+      if ($dialog[8] == 'No') {
+        $url = "/academics/on-campus-masters-clinical-mental-health-counseling-or-counseling-psychology-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/on-campus-masters-clinical-mental-health-counseling-or-counseling-psychology-how-to-apply-guide-international";
+      }
+    }
+    if ($dialog[2] == 'phd') {
+      if ($dialog[8] == 'No') {
+        $url = "/academics/phd-counseling-and-psychology-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/phd-counseling-and-psychology-how-to-apply-guide-international";
+      }
+    }
+    if ($dialog[2] == 'certificate') {
+      if ($dialog[8] == 'No') {
+        $url = "/academics/graduate-certificates-in-counseling-psychology-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/graduate-certificates-in-counseling-psychology-how-to-apply-guide-international";
+      }
+    }
+    // Creative Writing.
+  } elseif ($dialog[1] == 'creative_writing') {
+    if ($dialog[8] == 'No') {
+      $url = "/academics/mfa-in-creative-writing-how-to-apply-guide-us-students";
+    } else {
+      $url = "/academics/mfa-in-creative-writing-how-to-apply-guide-for-international-students";
+    }
+    // Education.
+  } elseif ($dialog[1] == 'education') {
+    // Call function to get Education related url redirects.
+    $url = _get_graduate_education_redirect($webform_submission);
+
+  } elseif ($dialog[1] == 'expressive_therapies') {
+    if ($dialog[4] == 'masters_degree') {
+      if ($dialog[8] == 'No') {
+        $url = "/academics/expressive-therapies-masters-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/expressive-therapies-masters-how-to-apply-guide-international";
+      }
+    }
+    if ($dialog[4] == 'phd') {
+      if ($dialog[8] == 'No') {
+        $url = "/academics/phd-expressive-therapies-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/phd-expressive-therapies-how-to-apply-guide-international";
+      }
+    }
+    if ($dialog[4] == 'certificate') {
+      if ($dialog[5] == 'graduate_certificate_expressive_therapie') {
+        if ($dialog[8] == 'No') {
+          $url = "/academics/graduate-certificate-arts-in-health-or-expressive-therapies-studies-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/graduate-certificate-arts-in-health-or-expressive-therapies-studies-how-to-apply-guide-international";
+        }
+      }
+      if ($dialog[5] == 'cags') {
+        if ($dialog[8] == 'No') {
+          $url = "/academics/cags-in-expressive-therapies-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/cags-in-expressive-therapies-how-to-apply-guide-international";
+        }
+      }
+    }
+    // International Higher Education.
+  } elseif ($dialog[1] == 'international_higher_education_intercultural_relations') {
+    if ($dialog[6] == 'masters_degree') {
+      if ($dialog[8] == 'No') {
+        $url = "/academics/international-higher-education-masters-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/international-higher-education-masters-how-to-apply-guide-international";
+      }
+    }
+    if ($dialog[6] == 'certificate') {
+      if ($dialog[8] == 'No') {
+        $url = "/academics/intercultural-relations-graduate-certificate-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/intercultural-relations-graduate-certificate-how-to-apply-guide-international-students";
+      }
+    }
+    // Mindfulness Studies.
+  } elseif ($dialog[1] == 'mindfulness_studies') {
+    if ($dialog[7] == 'masters_degree') {
+      if ($dialog[8] == 'No') {
+        $url = "/academics/mindfulness-studies-masters-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/mindfulness-studies-masters-how-to-apply-guide-international";
+      }
+    }
+    if ($dialog[7] == 'certificate') {
+      if ($dialog[8] == 'No') {
+        $url = "/academics/mindfulness-studies-graduate-certificate-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/mindfulness-studies-graduate-certificate-how-to-apply-guide-international";
+      }
+    }
+    // Photography & Integrated Media.
+  } elseif ($dialog[1] == 'photography_integrated_media') {
+    if ($dialog[8] == 'No') {
+      $url = "/academics/mfa-in-photography-and-integrated-media-how-to-apply-guide-us-students";
+    } else {
+      $url = "/academics/mfa-in-photography-and-integrated-media-how-to-apply-guide-international";
+    }
+    // Social Work.
+  } elseif ($dialog[1] == 'social_work') {
+    if ($dialog[8] == 'No') {
+      $url = "/academics/master-of-social-work-msw-how-to-apply-guide-us-students";
+    } else {
+      $url = "/academics/master-of-social-work-msw-how-to-apply-guide-international-students";
+    }
+    // Visual Arts.
+  } elseif ($dialog[1] == 'visual_arts') {
+    if ($dialog[8] == 'No') {
+      $url = "/academics/mfa-visual-arts-how-to-apply-guide-for-us-students";
+    } else {
+      $url = "/academics/mfa-visual-arts-how-to-apply-guide-for-international-students";
+    }
+  }
+
+  $values = [];
+  $values['msg'] = $msg;
+  $values['url'] = $url;
+
+  return $values;
+}
+
+/**
+ * Get the URL for Graduate Education - How to Apply page URL based on selections made in the webform.
+ */
+function _get_graduate_education_redirect(WebformSubmissionInterface $webform_submission)
+{
+  // Get the slection values from the webform.
+  $dialog = _get_graduate_education_values($webform_submission);
+  $url = '';
+
+  // Education program: Masters degree or license only.
+  if ($dialog[1] == 'masters_degree_or_license_only') {
+    // Art Education.
+    if ($dialog[2] == 'art_education') {
+      if ($dialog[3] == 'art_education_teacher_visual_art_face_to_face') {
+        if ($dialog[20] == 'No') {
+          $url = "/academics/med-or-license-only-art-education-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/med-or-license-only-art-education-how-to-apply-guide-international";
+        }
+      }
+      if ($dialog[3] == 'community_arts_education_face_to_face') {
+        if ($dialog[20] == 'No') {
+          $url = "/academics/med-in-arts-community-and-education-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/med-in-arts-community-and-education-how-to-apply-guide-international";
+        }
+      }
+      if ($dialog[3] == 'integrated_teaching_through_arts_off_campus') {
+        if ($dialog[20] == 'No') {
+          $url = "/academics/off-campus-med-integrated-teaching-through-the-arts-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/off-campus-med-integrated-teaching-through-the-arts-how-to-apply-guide-international";
+        }
+      }
+    }
+    // Early Childhood Education.
+    if ($dialog[2] == 'early_childhood_education') {
+      if ($dialog[4] == 'early_childhood_education_initial_license') {
+        if ($dialog[5] == 'face_to_face') {
+          if ($dialog[20] == 'No') {
+            $url = "/academics/on-campus-education-masters-or-license-only-how-to-apply-guide-us-students";
+          } else {
+            $url = "/academics/on-campus-education-masters-or-license-only-how-to-apply-guide-international ";
+          }
+        }
+        if ($dialog[5] == 'off_campus') {
+          if ($dialog[20] == 'No') {
+            $url = "/academics/off-campus-early-childhood-education-masters-how-to-apply-guide-us-students ";
+          } else {
+            $url = "/academics/off-campus-early-childhood-education-masters-how-to-apply-guide-international";
+          }
+        }
+        if ($dialog[5] == 'yearlong_teacher_residency') {
+          if ($dialog[20] == 'No') {
+            $url = "/academics/early-childhood-digital-literacy-or-individually-designed-masters-teacher-residency-how-to-apply-us";
+          } else {
+            $url = "/academics/early-childhood-digital-literacy-or-individually-designed-masters-teacher-residency-how-to-apply-international";
+          }
+        }
+      }
+      if ($dialog[4] == 'early_childhood_education_esl') {
+        if ($dialog[20] == 'No') {
+          $url = "/academics/elementary-education-urban-initiative-or-somerville-early-childhood-with-esl-teacher-residency-how-to-apply-us-students";
+        } else {
+          $url = "/academics/elementary-education-urban-initiative-or-somerville-early-childhood-with-esl-teacher-residency-how-to-apply-international";
+        }
+      }
+      if ($dialog[4] == 'innovative_pedagorges_face_to_face') {
+        if ($dialog[20] == 'No') {
+          $url = "/academics/on-campus-education-masters-in-innovative-pedagogies-in-early-childhood-professional-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/on-campus-education-masters-in-innovative-pedagogies-in-early-childhood-professional-how-to-apply-guide-international-students";
+        }
+      }
+    }
+    // Elementary Education.
+    if ($dialog[2] == 'elementary_education') {
+      if ($dialog[6] == 'elementary_education_initial_license') {
+        if ($dialog[7] == 'face_to_face') {
+          if ($dialog[20] == 'No') {
+            $url = "/academics/on-campus-med-or-license-in-elementary-education-how-to-apply-guide-us-students ";
+          } else {
+            $url = "/academics/on-campus-med-or-license-in-elementary-education-how-to-apply-guide-international ";
+          }
+        }
+        if ($dialog[7] == 'yearlong_teacher_residenc') {
+          if ($dialog[20] == 'No') {
+            $url = "/academics/med-in-elementary-education-teacher-residency-how-to-apply-guide-us-students";
+          } else {
+            $url = "/academics/med-in-elementary-education-teacher-residency-how-to-apply-guide-international";
+          }
+        }
+      }
+      if ($dialog[6] == 'elementary_education_esl') {
+        if ($dialog[20] == 'No') {
+          $url = "/academics/elementary-education-urban-initiative-or-somerville-early-childhood-with-esl-teacher-residency-how-to-apply-us-students ";
+        } else {
+          $url = "/academics/elementary-education-urban-initiative-or-somerville-early-childhood-with-esl-teacher-residency-how-to-apply-international";
+        }
+      }
+      if ($dialog[6] == 'elementary_education_generalist') {
+        if ($dialog[20] == 'No') {
+          $url = "/academics/online-education-masters-degrees-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/online-education-masters-degrees-how-to-apply-guide-international";
+        }
+      }
+    }
+    if ($dialog[2] == 'english_as_second_language_tesol') {
+      if ($dialog[8] == 'face_to_face') {
+        if ($dialog[20] == 'No') {
+          $url = "/academics/on-campus-education-masters-or-license-only-tesol-esl-individually-designed-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/on-campus-education-masters-or-license-only-tesol-esl-individually-designed-how-to-apply-guide-international-students";
+        }
+      }
+      if ($dialog[8] == 'off_campus') {
+        if ($dialog[20] == 'No') {
+          $url = "/academics/off-campus-education-masters-or-license-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/off-campus-education-masters-and-license-only-how-to-apply-guide-international";
+        }
+      }
+    }
+    if ($dialog[2] == 'individually_designed_for_educators') {
+      if ($dialog[9] == 'face_to_face') {
+        if ($dialog[20] == 'No') {
+          $url = "/academics/on-campus-education-masters-or-license-only-tesol-esl-individually-designed-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/on-campus-education-masters-or-license-only-tesol-esl-individually-designed-how-to-apply-guide-international-students";
+        }
+      }
+      if ($dialog[9] == 'online') {
+        if ($dialog[20] == 'No') {
+          $url = "/academics/online-education-masters-degrees-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/online-education-masters-degrees-how-to-apply-guide-international";
+        }
+      }
+      if ($dialog[9] == 'yearlong_teacher_residency') {
+        if ($dialog[20] == 'No') {
+          $url = "/academics/early-childhood-digital-literacy-or-individually-designed-masters-teacher-residency-how-to-apply-us";
+        } else {
+          $url = "/academics/early-childhood-digital-literacy-or-individually-designed-masters-teacher-residency-how-to-apply-international";
+        }
+      }
+    }
+    if ($dialog[2] == 'middle_or_high_school_education') {
+      if ($dialog[11] == 'face_to_face') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/on-campus-masters-or-license-in-middle-or-high-school-education-how-to-apply-guide-us";
+        } else {
+          $url = "/academics/on-campus-masters-or-license-in-middle-or-high-school-education-how-to-apply-guide-international";
+        }
+      }
+      if ($dialog[11] == 'off_campus') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/off-campus-med-or-license-in-middle-or-high-school-education-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/off-campus-med-or-license-in-middle-or-high-school-education-how-to-apply-guide-international";
+        }
+      }
+      if ($dialog[11] == 'yearlong_teacher_residency') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/med-in-middle-or-high-school-teacher-residency-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/med-in-middle-or-high-school-teacher-residency-how-to-apply-guide-international";
+        }
+      }
+    }
+    if ($dialog[2] == 'reading_literacy_education') {
+      if ($dialog[10] == 'reading_specialist') {
+        if ($dialog[12] == 'face_to_face') {
+          if ($dialog[21] == 'No') {
+            $url = "/academics/on-campus-reading-specialist-masters-license-or-cags-how-to-apply-guide-us-students";
+          } else {
+            $url = "/academics/on-campus-reading-specialist-masters-license-or-cags-how-to-apply-guide-international";
+          }
+        }
+        if ($dialog[12] == 'off_campus') {
+          if ($dialog[21] == 'No') {
+            $url = "/academics/off-campus-reading-specialist-masters-license-or-cags-how-to-apply-guide-us-students";
+          } else {
+            $url = "/academics/off-campus-reading-specialist-masters-license-or-cags-how-to-apply-guide-international";
+          }
+        }
+      }
+      if ($dialog[10] == 'language_literacy') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/online-education-masters-degrees-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/online-education-masters-degrees-how-to-apply-guide-international";
+        }
+      }
+    }
+    if ($dialog[2] == 'science_technology_math_education') {
+      if ($dialog[13] == 'digital_literacy_computer_science') {
+        if ($dialog[14] == 'face_to_face') {
+          if ($dialog[21] == 'No') {
+            $url = "/academics/on-campus-education-masters-or-license-only-how-to-apply-guide-us-students";
+          } else {
+            $url = "/academics/on-campus-education-masters-or-license-only-how-to-apply-guide-international";
+          }
+        }
+        if ($dialog[14] == 'off_campus') {
+          if ($dialog[21] == 'No') {
+            $url = "/academics/off-campus-education-masters-or-license-how-to-apply-guide-us-students";
+          } else {
+            $url = "/academics/off-campus-education-masters-and-license-only-how-to-apply-guide-international";
+          }
+        }
+      }
+      if ($dialog[13] == 'instructional_technology_specialist') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/license-only-instructional-technology-specialist-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/license-only-instructional-technology-specialist-how-to-apply-guide-for-international";
+        }
+      }
+      if ($dialog[13] == 'science_in_education') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/online-education-masters-degrees-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/online-education-masters-degrees-how-to-apply-guide-international";
+        }
+      }
+      if ($dialog[13] == 'mathematics_education_online') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/online-education-masters-degrees-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/online-education-masters-degrees-how-to-apply-guide-international";
+        }
+      }
+    }
+    if ($dialog[2] == 'special_education') {
+      if ($dialog[15] == 'face_to_face') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/on-campus-med-or-license-in-special-education-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/on-campus-med-or-license-in-special-education-how-to-apply-guide-international";
+        }
+      }
+      if ($dialog[15] == 'off_campus') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/off-campus-masters-in-special-education-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/off-campus-masters-or-license-in-special-education-how-to-apply-guide-international";
+        }
+      }
+      if ($dialog[15] == 'yearlong_teacher_residency') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/med-in-special-education-teacher-residency-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/med-in-special-education-teacher-residency-how-to-apply-guide-international";
+        }
+      }
+    }
+    // Education program: PHD.
+  } elseif ($dialog[1] == 'phd') {
+    if ($dialog[16] == 'educational_leadership') {
+      if ($dialog[21] == 'No') {
+        $url = "/academics/phd-educational-studies-educational-leadership-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/phd-educational-studies-educational-leadership-how-to-apply-guide-international";
+      }
+    }
+    if ($dialog[16] == 'human_development_learning') {
+      if ($dialog[21] == 'No') {
+        $url = "/academics/phd-educational-studies-human-development-and-learning-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/phd-educational-studies-human-development-and-learning-how-to-apply-guide-international";
+      }
+    }
+    if ($dialog[16] == 'individually_designed') {
+      if ($dialog[21] == 'No') {
+        $url = "/academics/phd-educational-studies-individually-designed-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/phd-educational-studies-individually-designed-how-to-apply-guide-international";
+      }
+    }
+    // Education program: Certificate.
+  } elseif ($dialog[1] == 'certificate') {
+    if ($dialog[17] == 'arts_education_strategies') {
+      if ($dialog[21] == 'No') {
+        $url = "/academics/graduate-certificate-off-campus-arts-integration-strategies-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/graduate-certificate-off-campus-arts-integration-strategies-how-to-apply-guide-international-students";
+      }
+    }
+    if ($dialog[17] == 'early_childhood_education') {
+      if ($dialog[21] == 'No') {
+        $url = "/academics/graduate-certificate-innovative-pedagogies-in-early-childhood-how-to-apply-guide-us";
+      } else {
+        $url = "/academics/graduate-certificate-innovative-pedagogies-in-early-childhood-how-to-apply-guide-international";
+      }
+    }
+    if ($dialog[17] == 'literacy_reading_education') {
+      if ($dialog[18] == 'reading_specialist_cags') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/on-campus-reading-specialist-masters-license-or-cags-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/on-campus-reading-specialist-masters-license-or-cags-how-to-apply-guide-international";
+        }
+      }
+      if ($dialog[18] == 'online_graduate_certificate') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/online-education-graduate-certificates-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/online-education-graduate-certificates-how-to-apply-guide-international";
+        }
+      }
+    }
+    if ($dialog[17] == 'math_science_education') {
+      if ($dialog[21] == 'No') {
+        $url = "/academics/online-education-graduate-certificates-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/online-education-graduate-certificates-how-to-apply-guide-international";
+      }
+    }
+    if ($dialog[17] == 'special_education') {
+      if ($dialog[21] == 'No') {
+        $url = "/academics/online-education-graduate-certificates-how-to-apply-guide-us-students";
+      } else {
+        $url = "/academics/online-education-graduate-certificates-how-to-apply-guide-international";
+      }
+    }
+    if ($dialog[17] == 'tesol_eslL_education') {
+      if ($dialog[19] == 'bilingual_education_endorsement') {
+        $url = "/academics/bilingual-education-endorsement-how-to-apply-guide-us-students";
+      }
+      if ($dialog[19] == 'teaching_english') {
+        if ($dialog[21] == 'No') {
+          $url = "/academics/online-education-graduate-certificates-how-to-apply-guide-us-students";
+        } else {
+          $url = "/academics/online-education-graduate-certificates-how-to-apply-guide-international";
+        }
+      }
+    }
+  }
+
+  return ($url);
+
+}
+
+function _get_undergrad_values(WebformSubmissionInterface $webform_submission) {
+  // Define variables.
+  $arr = [];
+  $arr[1] = $webform_submission->getElementData('degree');
+  $arr[2] = $webform_submission->getElementData('select_journey');
+  $arr[3] = $webform_submission->getElementData('select_art_or_liberal_art');
+  $arr[4] = $webform_submission->getElementData('select_plan_to_study');
+  $arr[5] = $webform_submission->getElementData('select_one_of_the_following');
+  $arr[6] = $webform_submission->getElementData('ba_business');
+  $arr[7] = $webform_submission->getElementData('select_one_of_the_following_certificates');
+  $arr[8] = $webform_submission->getElementData('select_international_student');
+
+  return $arr;
+}
+
+function _get_graduate_values(WebformSubmissionInterface $webform_submission) {
+  // Define variables.
+  $arr = [];
+  $arr[1] = $webform_submission->getElementData('want_to_study');
+  $arr[2] = $webform_submission->getElementData('select_couseling_psychology_program');
+  $arr[3] = $webform_submission->getElementData('plan_to_study');
+  $arr[4] = $webform_submission->getElementData('select_expressive_therapies_program');
+  $arr[5] = $webform_submission->getElementData('select_certificate');
+  $arr[6] = $webform_submission->getElementData('select_which_program');
+  $arr[7] = $webform_submission->getElementData('select_mindfulness_studies');
+  $arr[8] = $webform_submission->getElementData('select_international_student_01');
+
+  return $arr;
+}
+function _get_graduate_education_values(WebformSubmissionInterface $webform_submission) {
+  // Define variables.
+  $arr = [];
+  $arr[1] = $webform_submission->getElementData('select_education_program');
+  $arr[2] = $webform_submission->getElementData('select_area_of_education');
+  $arr[3] = $webform_submission->getElementData('select_art_education_program');
+  $arr[4] = $webform_submission->getElementData('select_early_childhood_program');
+  $arr[5] = $webform_submission->getElementData('select_where_you_plan_to_study');
+  $arr[6] = $webform_submission->getElementData('select_elementary_education_program');
+  $arr[7] = $webform_submission->getElementData('select_where_you_plan_to_study_elementary');
+  $arr[8] = $webform_submission->getElementData('select_where_you_plan_to_study_03');
+  $arr[9] = $webform_submission->getElementData('select_where_you_plan_to_study_04');
+  $arr[10] = $webform_submission->getElementData('select_which_reading_literacy_education_program');
+  $arr[11] = $webform_submission->getElementData('select_where_you_plan_to_study_05');
+  $arr[12] = $webform_submission->getElementData('select_where_you_plan_to_study_06');
+  $arr[13] = $webform_submission->getElementData('select_science_technology');
+  $arr[14] = $webform_submission->getElementData('select_where_you_plan_to_study_07');
+  $arr[15] = $webform_submission->getElementData('select_where_you_plan_to_study_08');
+  $arr[16] = $webform_submission->getElementData('select_which_phd_specialization_in_educational_studies');
+  $arr[17] = $webform_submission->getElementData('select_which_area_of_education_certificate');
+  $arr[18] = $webform_submission->getElementData('select_which_literacy_reading_certificate');
+  $arr[19] = $webform_submission->getElementData('select_which_tesol_esl_certificate');
+  $arr[20] = $webform_submission->getElementData('select_international_student_02');
+  $arr[21] = $webform_submission->getElementData('select_international_student_03');
+
+  return $arr;
+}

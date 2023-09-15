@@ -1,0 +1,9 @@
+name: Lesley Webform
+description: 'Provides custom functions for the How to Apply webform'
+package: Lesley
+
+dependencies:
+  - webform
+
+type: module
+core_version_requirement: ^8 || ^9

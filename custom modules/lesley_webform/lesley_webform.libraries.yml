@@ -1,0 +1,5 @@
+lesley_webform:
+  version: 1.x
+  css:
+    theme:
+      css/lesley_webform.css: {}
