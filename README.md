@@ -1,2 +1,2 @@
 # code-samples
-VAriuos code samples in PHP, CSS, HTML, javaScript
+Various code samples in PHP, CSS, HTML, javaScript
